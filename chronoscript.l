@@ -1,20 +1,10 @@
 %{
-/*
- * ChronoScript Lexical Analyzer
- * CSE 3212 - Compiler Lab Project
- * 
- * This lexer recognizes all tokens for the ChronoScript language,
- * a custom syntax mapping to C-like constructs.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* Line number tracking */
 int yylineno = 1;
 
-/* Token value storage (will be used by parser later) */
 union {
     int intval;
     float floatval;
@@ -23,14 +13,12 @@ union {
     char* strval;
 } yylval;
 
-/* Debug macro - only prints if DEBUG is defined */
 #ifdef DEBUG
     #define DEBUG_PRINT(token) printf("Line %d: Token %s ('%s')\n", yylineno, token, yytext)
 #else
     #define DEBUG_PRINT(token)
 #endif
 
-/* Token definitions for parser compatibility */
 #define VOID            1
 #define TRUTH           2
 #define MATTER          3
@@ -66,7 +54,6 @@ union {
 #define STANDARD        29
 #define PERSPECTIVE     30
 
-/* Operators */
 #define PLUS            31
 #define MINUS           32
 #define MULTIPLY        33
@@ -91,7 +78,6 @@ union {
 #define LEFT_SHIFT      49
 #define RIGHT_SHIFT     50
 
-/* Block symbols */
 #define LBRACE          51
 #define RBRACE          52
 #define LPAREN          53
@@ -99,7 +85,6 @@ union {
 #define SEMICOLON       55
 #define COMMA           56
 
-/* Math functions */
 #define SINE            57
 #define COSINE          58
 #define TANGENT         59
@@ -113,11 +98,9 @@ union {
 #define CEILING_FUNC    67
 #define SQUAREROOT      68
 
-/* Directives */
 #define INCORPORATE     69
 #define CONSTANT        70
 
-/* Literals and identifiers */
 #define INTEGER_LITERAL 71
 #define FLOAT_LITERAL   72
 #define CHAR_LITERAL    73
@@ -126,11 +109,9 @@ union {
 
 %}
 
-/* Flex options */
 %option noyywrap
 %option yylineno
 
-/* Regular expression definitions */
 DIGIT           [0-9]
 LETTER          [a-zA-Z_]
 IDENTIFIER_CHAR [a-zA-Z0-9_]
@@ -143,11 +124,9 @@ NEWLINE         \n
 
 %%
 
-    /* ================ PREPROCESSOR DIRECTIVES ================ */
 "#Incorporate"      { DEBUG_PRINT("INCORPORATE"); return INCORPORATE; }
 "#Constant"         { DEBUG_PRINT("CONSTANT"); return CONSTANT; }
 
-    /* ================ DATA TYPES ================ */
 "Void"              { DEBUG_PRINT("VOID"); return VOID; }
 "Truth"             { DEBUG_PRINT("TRUTH"); return TRUTH; }
 "Matter"            { DEBUG_PRINT("MATTER"); return MATTER; }
@@ -160,17 +139,14 @@ NEWLINE         \n
 "fullEnergy"        { DEBUG_PRINT("FULL_ENERGY"); return FULL_ENERGY; }
 "smallMatter"       { DEBUG_PRINT("SMALL_MATTER"); return SMALL_MATTER; }
 
-    /* ================ TYPE QUALIFIERS ================ */
 "flux"              { DEBUG_PRINT("FLUX"); return FLUX; }
 "fixed"             { DEBUG_PRINT("FIXED"); return FIXED; }
 
-    /* ================ STRUCTURAL KEYWORDS ================ */
 "timeline"          { DEBUG_PRINT("TIMELINE"); return TIMELINE; }
 "structure"         { DEBUG_PRINT("STRUCTURE"); return STRUCTURE; }
 "unison"            { DEBUG_PRINT("UNISON"); return UNISON; }
 "instance"          { DEBUG_PRINT("INSTANCE"); return INSTANCE; }
 
-    /* ================ CONTROL FLOW ================ */
 "Event"             { DEBUG_PRINT("EVENT"); return EVENT; }
 "Persist"           { DEBUG_PRINT("PERSIST"); return PERSIST; }
 "Escape"            { DEBUG_PRINT("ESCAPE"); return ESCAPE; }
@@ -178,7 +154,6 @@ NEWLINE         \n
 "Observe"           { DEBUG_PRINT("OBSERVE"); return OBSERVE; }
 "Broadcast"         { DEBUG_PRINT("BROADCAST"); return BROADCAST; }
 
-    /* ================ CONDITIONAL & LOOP KEYWORDS ================ */
 "Era"               { DEBUG_PRINT("ERA"); return ERA; }
 "Alternate"         { DEBUG_PRINT("ALTERNATE"); return ALTERNATE; }
 "Loop"              { DEBUG_PRINT("LOOP"); return LOOP; }
@@ -187,7 +162,6 @@ NEWLINE         \n
 "standard"          { DEBUG_PRINT("STANDARD"); return STANDARD; }
 "perspective"       { DEBUG_PRINT("PERSPECTIVE"); return PERSPECTIVE; }
 
-    /* ================ MATH FUNCTIONS ================ */
 "sine"              { DEBUG_PRINT("SINE"); return SINE; }
 "cosine"            { DEBUG_PRINT("COSINE"); return COSINE; }
 "tangent"           { DEBUG_PRINT("TANGENT"); return TANGENT; }
@@ -201,7 +175,6 @@ NEWLINE         \n
 "ceiling"           { DEBUG_PRINT("CEILING_FUNC"); return CEILING_FUNC; }
 "squareroot"        { DEBUG_PRINT("SQUAREROOT"); return SQUAREROOT; }
 
-    /* ================ MULTI-CHARACTER OPERATORS ================ */
 "<<"                { DEBUG_PRINT("LEFT_SHIFT"); return LEFT_SHIFT; }
 ">>"                { DEBUG_PRINT("RIGHT_SHIFT"); return RIGHT_SHIFT; }
 "=="                { DEBUG_PRINT("EQUAL"); return EQUAL; }
@@ -211,7 +184,6 @@ NEWLINE         \n
 "&&"                { DEBUG_PRINT("LOGICAL_AND"); return LOGICAL_AND; }
 "||"                { DEBUG_PRINT("LOGICAL_OR"); return LOGICAL_OR; }
 
-    /* ================ SINGLE-CHARACTER OPERATORS ================ */
 "+"                 { DEBUG_PRINT("PLUS"); return PLUS; }
 "-"                 { DEBUG_PRINT("MINUS"); return MINUS; }
 "*"                 { DEBUG_PRINT("MULTIPLY"); return MULTIPLY; }
@@ -225,7 +197,6 @@ NEWLINE         \n
 "|"                 { DEBUG_PRINT("BITWISE_OR"); return BITWISE_OR; }
 "^"                 { DEBUG_PRINT("BITWISE_XOR"); return BITWISE_XOR; }
 
-    /* ================ BLOCK SYMBOLS ================ */
 "{"                 { DEBUG_PRINT("LBRACE"); return LBRACE; }
 "}"                 { DEBUG_PRINT("RBRACE"); return RBRACE; }
 "("                 { DEBUG_PRINT("LPAREN"); return LPAREN; }
@@ -233,7 +204,6 @@ NEWLINE         \n
 ";"                 { DEBUG_PRINT("SEMICOLON"); return SEMICOLON; }
 ","                 { DEBUG_PRINT("COMMA"); return COMMA; }
 
-    /* ================ LITERALS ================ */
 {INTEGER}           { 
                         yylval.intval = atoi(yytext); 
                         DEBUG_PRINT("INTEGER_LITERAL"); 
@@ -247,7 +217,6 @@ NEWLINE         \n
                     }
 
 {CHAR_LITERAL}      { 
-                        /* Store character value (handle escape sequences) */
                         if (yytext[1] == '\\') {
                             switch(yytext[2]) {
                                 case 'n': yylval.charval = '\n'; break;
@@ -266,7 +235,6 @@ NEWLINE         \n
                     }
 
 {STRING_LITERAL}    { 
-                        /* Allocate and store string (remove quotes) */
                         int len = strlen(yytext);
                         yylval.strval = (char*)malloc(len - 1);
                         strncpy(yylval.strval, yytext + 1, len - 2);
@@ -275,18 +243,15 @@ NEWLINE         \n
                         return STRING_LITERAL; 
                     }
 
-    /* ================ IDENTIFIERS ================ */
 {LETTER}{IDENTIFIER_CHAR}* { 
                         yylval.strval = strdup(yytext); 
                         DEBUG_PRINT("IDENTIFIER"); 
                         return IDENTIFIER; 
                     }
 
-    /* ================ COMMENTS ================ */
-"//".*              { /* Single-line comment - ignore */ }
+"//".*              { }
 
 "/*"                {
-                        /* Multi-line comment */
                         int c;
                         int prev = 0;
                         while ((c = input()) != 0) {
@@ -296,11 +261,9 @@ NEWLINE         \n
                         }
                     }
 
-    /* ================ WHITESPACE ================ */
-{WHITESPACE}        { /* Ignore whitespace */ }
+{WHITESPACE}        { }
 {NEWLINE}           { yylineno++; }
 
-    /* ================ ERROR HANDLING ================ */
 .                   { 
                         fprintf(stderr, "Lexical Error: Unknown symbol '%s' at line %d\n", 
                                 yytext, yylineno);
@@ -308,17 +271,11 @@ NEWLINE         \n
 
 %%
 
-/*
- * Main function for standalone testing
- * Compile with: flex chronoscript.l && gcc lex.yy.c -o chronoscript_lexer -ll
- * Run with: ./chronoscript_lexer < input_file.cs
- */
 int main(int argc, char** argv) {
     int token;
     
-    printf("ChronoScript Lexical Analyzer\n");
-    printf("==============================\n\n");
-    
+    printf("ChronoScript Lexical Analyzer\n-\t-\t-\t-\n");
+
     if (argc > 1) {
         FILE* file = fopen(argv[1], "r");
         if (!file) {
@@ -331,9 +288,7 @@ int main(int argc, char** argv) {
     printf("Scanning input...\n\n");
     
     while ((token = yylex()) != 0) {
-        /* Token processing would happen here in integration with parser */
         #ifdef DEBUG
-        /* Debug output already printed by rules */
         #else
         printf("Token: %d\n", token);
         #endif
