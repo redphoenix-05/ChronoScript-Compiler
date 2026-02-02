@@ -1,0 +1,19 @@
+TOKEN TYPE           LEXEME                    LINE
+--------------------------------------------------------------------------------
+EVENT                Event                     2
+IDENTIFIER           main                      2
+LPAREN               (                         2
+RPAREN               )                         2
+LBRACE               {                         2
+BROADCAST            Broadcast                 3
+LPAREN               (                         3
+STRING_LITERAL       "Hello, World!"           3
+RPAREN               )                         3
+SEMICOLON            ;                         3
+RESOLVE              Resolve                   4
+INTEGER_LITERAL      0                         4
+SEMICOLON            ;                         4
+RBRACE               }                         5
+--------------------------------------------------------------------------------
+Total Tokens: 14
+Total Lines: 6

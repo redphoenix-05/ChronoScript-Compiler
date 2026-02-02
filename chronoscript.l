@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-int yylineno = 1;
-
 union {
     int intval;
     float floatval;
@@ -84,6 +82,10 @@ union {
 #define RPAREN          54
 #define SEMICOLON       55
 #define COMMA           56
+#define LBRACKET        76
+#define RBRACKET        77
+#define DOT             78
+#define COLON           79
 
 #define SINE            57
 #define COSINE          58
@@ -203,6 +205,10 @@ NEWLINE         \n
 ")"                 { DEBUG_PRINT("RPAREN"); return RPAREN; }
 ";"                 { DEBUG_PRINT("SEMICOLON"); return SEMICOLON; }
 ","                 { DEBUG_PRINT("COMMA"); return COMMA; }
+"["                 { DEBUG_PRINT("LBRACKET"); return LBRACKET; }
+"]"                 { DEBUG_PRINT("RBRACKET"); return RBRACKET; }
+"."                 { DEBUG_PRINT("DOT"); return DOT; }
+":"                 { DEBUG_PRINT("COLON"); return COLON; }
 
 {INTEGER}           { 
                         yylval.intval = atoi(yytext); 
@@ -262,7 +268,7 @@ NEWLINE         \n
                     }
 
 {WHITESPACE}        { }
-{NEWLINE}           { yylineno++; }
+{NEWLINE}           { }
 
 .                   { 
                         fprintf(stderr, "Lexical Error: Unknown symbol '%s' at line %d\n", 
@@ -271,31 +277,177 @@ NEWLINE         \n
 
 %%
 
-int main(int argc, char** argv) {
-    int token;
-    
-    printf("ChronoScript Lexical Analyzer\n-\t-\t-\t-\n");
+const char* get_token_name(int token) {
+    switch(token) {
+        case VOID: return "VOID";
+        case TRUTH: return "TRUTH";
+        case MATTER: return "MATTER";
+        case ATOM: return "ATOM";
+        case STREAM: return "STREAM";
+        case ENERGY: return "ENERGY";
+        case HIGH_ENERGY: return "HIGH_ENERGY";
+        case PURE_MATTER: return "PURE_MATTER";
+        case LARGE_MATTER: return "LARGE_MATTER";
+        case FULL_ENERGY: return "FULL_ENERGY";
+        case SMALL_MATTER: return "SMALL_MATTER";
+        case FLUX: return "FLUX";
+        case FIXED: return "FIXED";
+        case TIMELINE: return "TIMELINE";
+        case STRUCTURE: return "STRUCTURE";
+        case UNISON: return "UNISON";
+        case INSTANCE: return "INSTANCE";
+        case EVENT: return "EVENT";
+        case PERSIST: return "PERSIST";
+        case ESCAPE: return "ESCAPE";
+        case RESOLVE: return "RESOLVE";
+        case OBSERVE: return "OBSERVE";
+        case BROADCAST: return "BROADCAST";
+        case ERA: return "ERA";
+        case ALTERNATE: return "ALTERNATE";
+        case LOOP: return "LOOP";
+        case DIVERGE: return "DIVERGE";
+        case REFORGE: return "REFORGE";
+        case STANDARD: return "STANDARD";
+        case PERSPECTIVE: return "PERSPECTIVE";
+        case PLUS: return "PLUS";
+        case MINUS: return "MINUS";
+        case MULTIPLY: return "MULTIPLY";
+        case DIVIDE: return "DIVIDE";
+        case MODULO: return "MODULO";
+        case ASSIGN: return "ASSIGN";
+        case EQUAL: return "EQUAL";
+        case NOT_EQUAL: return "NOT_EQUAL";
+        case GREATER: return "GREATER";
+        case LESS: return "LESS";
+        case GREATER_EQUAL: return "GREATER_EQUAL";
+        case LESS_EQUAL: return "LESS_EQUAL";
+        case LOGICAL_AND: return "LOGICAL_AND";
+        case LOGICAL_OR: return "LOGICAL_OR";
+        case LOGICAL_NOT: return "LOGICAL_NOT";
+        case BITWISE_AND: return "BITWISE_AND";
+        case BITWISE_OR: return "BITWISE_OR";
+        case BITWISE_XOR: return "BITWISE_XOR";
+        case LEFT_SHIFT: return "LEFT_SHIFT";
+        case RIGHT_SHIFT: return "RIGHT_SHIFT";
+        case LBRACE: return "LBRACE";
+        case RBRACE: return "RBRACE";
+        case LPAREN: return "LPAREN";
+        case RPAREN: return "RPAREN";
+        case SEMICOLON: return "SEMICOLON";
+        case COMMA: return "COMMA";
+        case LBRACKET: return "LBRACKET";
+        case RBRACKET: return "RBRACKET";
+        case DOT: return "DOT";
+        case COLON: return "COLON";
+        case SINE: return "SINE";
+        case COSINE: return "COSINE";
+        case TANGENT: return "TANGENT";
+        case INV_SINE: return "INV_SINE";
+        case INV_COSINE: return "INV_COSINE";
+        case INV_TANGENT: return "INV_TANGENT";
+        case LOGARITHM: return "LOGARITHM";
+        case POWER: return "POWER";
+        case ABSOLUTE: return "ABSOLUTE";
+        case FLOOR_FUNC: return "FLOOR_FUNC";
+        case CEILING_FUNC: return "CEILING_FUNC";
+        case SQUAREROOT: return "SQUAREROOT";
+        case INCORPORATE: return "INCORPORATE";
+        case CONSTANT: return "CONSTANT";
+        case INTEGER_LITERAL: return "INTEGER_LITERAL";
+        case FLOAT_LITERAL: return "FLOAT_LITERAL";
+        case CHAR_LITERAL: return "CHAR_LITERAL";
+        case STRING_LITERAL: return "STRING_LITERAL";
+        case IDENTIFIER: return "IDENTIFIER";
+        default: return "UNKNOWN";
+    }
+}
 
-    if (argc > 1) {
-        FILE* file = fopen(argv[1], "r");
-        if (!file) {
-            fprintf(stderr, "Error: Cannot open file '%s'\n", argv[1]);
-            return 1;
-        }
-        yyin = file;
+typedef struct {
+    int token;
+    char lexeme[256];
+    int line;
+} TokenInfo;
+
+TokenInfo tokens[10000];
+int token_count = 0;
+char current_lexeme[256];
+
+void process_file(const char* input_file, const char* output_file) {
+    FILE* file = fopen(input_file, "r");
+    if (!file) {
+        fprintf(stderr, "Error: Cannot open file '%s'\n", input_file);
+        return;
     }
     
-    printf("Scanning input...\n\n");
+    FILE* output = fopen(output_file, "w");
+    if (!output) {
+        fprintf(stderr, "Error: Cannot create output file '%s'\n", output_file);
+        fclose(file);
+        return;
+    }
     
+    yyin = file;
+    yylineno = 1;
+    token_count = 0;
+    
+    int token;
     while ((token = yylex()) != 0) {
-        #ifdef DEBUG
-        #else
-        printf("Token: %d\n", token);
-        #endif
+        tokens[token_count].token = token;
+        strncpy(tokens[token_count].lexeme, yytext, 255);
+        tokens[token_count].lexeme[255] = '\0';
+        tokens[token_count].line = yylineno;
+        token_count++;
     }
     
-    printf("\nLexical analysis complete.\n");
-    printf("Total lines processed: %d\n", yylineno);
+    fprintf(output, "TOKEN TYPE           LEXEME                    LINE\n");
+    fprintf(output, "--------------------------------------------------------------------------------\n");
+    
+    for (int i = 0; i < token_count; i++) {
+        fprintf(output, "%-20s %-25s %d\n", 
+                get_token_name(tokens[i].token), 
+                tokens[i].lexeme, 
+                tokens[i].line);
+    }
+    
+    fprintf(output, "--------------------------------------------------------------------------------\n");
+    fprintf(output, "Total Tokens: %d\n", token_count);
+    fprintf(output, "Total Lines: %d\n", yylineno);
+    
+    fclose(file);
+    fclose(output);
+}
+
+int main(int argc, char** argv) {
+    printf("ChronoScript Lexical Analyzer\n");
+    printf("==============================\n\n");
+    
+    const char* input_files[] = {
+        "samples/sample1_helloworld.txt",
+        "samples/sample2_arithmetic.txt",
+        "samples/sample3_control.txt",
+        "samples/sample4_functions.txt",
+        "samples/sample5_complete.txt"
+    };
+    
+    const char* output_files[] = {
+        "outputs/output1_helloworld.txt",
+        "outputs/output2_arithmetic.txt",
+        "outputs/output3_control.txt",
+        "outputs/output4_functions.txt",
+        "outputs/output5_complete.txt"
+    };
+    
+    int num_files = 5;
+    
+    for (int i = 0; i < num_files; i++) {
+        printf("Processing sample %d...", i + 1);
+        fflush(stdout);
+        process_file(input_files[i], output_files[i]);
+        printf(" Done!\n");
+    }
+    
+    printf("\n==============================\n");
+    printf("All samples processed successfully!\n");
     
     return 0;
 }

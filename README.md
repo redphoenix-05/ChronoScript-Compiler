@@ -3,28 +3,33 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Language](https://img.shields.io/badge/language-Flex%2FC-green)
 ![Course](https://img.shields.io/badge/course-CSE%203212-orange)
+![Platform](https://img.shields.io/badge/platform-Linux%20|%20macOS%20|%20Windows%20WSL-lightgrey)
 
 A lexical analyzer (scanner/tokenizer) for **ChronoScript**, a custom programming language with time-themed syntax that maps to C-like constructs.
+
+---
 
 ## 📋 Table of Contents
 - [Overview](#overview)
 - [Features](#features)
+- [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Project Structure](#project-structure)
 - [Usage](#usage)
 - [ChronoScript Language Reference](#chronoscript-language-reference)
-- [Project Structure](#project-structure)
-- [Compilation Modes](#compilation-modes)
-- [Examples](#examples)
+- [Sample Programs](#sample-programs)
+- [Output Verification](#output-verification)
 - [Technical Details](#technical-details)
-- [Contributing](#contributing)
+- [Troubleshooting](#troubleshooting)
+- [Course Information](#course-information)
 - [License](#license)
 
 ---
 
 ## 🎯 Overview
 
-This project implements the lexical analysis phase of a compiler for ChronoScript, an educational programming language designed for the CSE 3212 Compiler Lab course. The lexer is built using **Flex** (Fast Lexical Analyzer Generator) and transforms source code into a stream of tokens for subsequent parsing.
+This project implements the **lexical analysis phase** of a compiler for ChronoScript, an educational programming language designed for the CSE 3212 Compiler Lab course. The lexer is built using **Flex** (Fast Lexical Analyzer Generator) and transforms source code into a stream of tokens for subsequent parsing.
 
 ### What is a Lexical Analyzer?
 
@@ -34,6 +39,14 @@ A lexical analyzer (lexer/scanner) is the first phase of a compiler that:
 3. Filters out whitespace and comments
 4. Reports lexical errors (invalid characters/symbols)
 5. Passes tokens to the parser for syntax analysis
+
+### Lab Project Context
+
+- **Course**: CSE 3212 - Compiler Design Laboratory
+- **Phase**: Lexical Analysis (Phase 1)
+- **Tool**: Flex (Lexical Analyzer Generator)
+- **Language**: ChronoScript (Custom C-like language)
+- **Status**: ✅ Lexer Implementation Complete
 
 ---
 
@@ -49,39 +62,184 @@ A lexical analyzer (lexer/scanner) is the first phase of a compiler that:
 - ✅ **Error Reporting**: Clear error messages with line numbers
 - ✅ **Standalone Operation**: Can run independently without parser
 
-### Token Categories
-| Category | Count | Examples |
-|----------|-------|----------|
-| Data Types | 11 | `Matter`, `Energy`, `Truth`, `Atom` |
-| Keywords | 13 | `Era`, `Loop`, `Event`, `Resolve` |
-| Operators | 20 | `+`, `-`, `*`, `/`, `==`, `&&`, `<<` |
-| Math Functions | 12 | `sine`, `logarithm`, `squareroot` |
-| Literals | 4 | Integers, floats, chars, strings |
-| Symbols | 6 | `{`, `}`, `(`, `)`, `;`, `,` |
-| Directives | 2 | `#Incorporate`, `#Constant` |
+### Supported Language Features
+- **Data Types**: `Matter` (int), `Energy` (float), `Atom` (char), `Stream` (string), `Truth` (bool), `Void`
+- **Type Modifiers**: `flux` (volatile), `fixed` (const), `instance` (static)
+- **Control Flow**: `Era` (if), `Alternate` (else), `Loop` (for), `Diverge` (break), `Persist` (continue)
+- **Mathematical Functions**: `sine`, `cosine`, `tangent`, `logarithm`, `power`, `squareroot`, etc.
+- **Operators**: Arithmetic, Logical, Bitwise, Comparison, Assignment
+- **Advanced Features**: `structure` (struct), `unison` (union), `timeline` (array), `perspective` (switch)
 
 ---
 
-## 🔧 Prerequisites
+## 🚀 Quick Start
 
-### Required Software
-- **Flex** (version 2.5.4 or higher)
-- **GCC** or compatible C compiler
-- **Make** (for using Makefile)
+### For Linux/macOS Users
 
-### Installation Commands
+```bash
+# Install Flex and GCC
+sudo apt install flex build-essential    # Ubuntu/Debian
+# or
+brew install flex                         # macOS
 
-#### Windows
-```powershell
-# Using Chocolatey
-choco install winflexbison3
-choco install make
+# Build the lexer
+make
 
-# Or using MSYS2
-pacman -S flex make gcc
+# Run on a sample file
+make run FILE=sample1.chrono
 ```
 
-#### Linux (Ubuntu/Debian)
+### For Windows Users
+
+**Option 1: WSL (Recommended)**
+```powershell
+# Launch WSL Ubuntu
+wsl -d Ubuntu
+
+# Install tools
+sudo apt update
+sudo apt install flex build-essential
+
+# Navigate to project
+cd "/mnt/e/Programming/Lab Projects/Compiler Lab Project/ChronoScript-Compiler"
+
+# Build and run
+make
+make run FILE=sample1.chrono
+```
+
+**See [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) for complete Windows setup instructions.**
+
+---
+
+## 📦 Prerequisites
+
+### Required Tools
+- **Flex** (version 2.6.0 or higher) - Lexical analyzer generator
+- **GCC** or **Clang** - C compiler
+- **Make** (optional but recommended) - Build automation
+
+### Operating System Support
+- ✅ Linux (Ubuntu, Fedora, Arch, etc.)
+- ✅ macOS (Intel and Apple Silicon)
+- ✅ Windows (via WSL, Cygwin, or WinFlexBison)
+
+### Installation Guides
+- **Linux/macOS**: See [INSTALL.md](INSTALL.md)
+- **Windows**: See [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)
+
+---
+
+## 📁 Project Structure
+
+```
+ChronoScript-Compiler/
+│
+├── chronoscript.l               # Flex lexer specification (main source)
+├── Makefile                     # Build automation script
+│
+├── sample1.chrono               # Sample program: Basic features
+├── sample2.chrono               # Sample program: Advanced features
+├── sample_math.chrono           # Sample program: Mathematical functions
+│
+├── output_sample1.txt           # Expected output for sample1.chrono
+├── output_sample2.txt           # Expected output for sample2.chrono
+├── output_math.txt              # Expected output for sample_math.chrono
+│
+├── README.md                    # This file
+├── COMMANDS.md                  # Detailed command reference
+├── INSTALL.md                   # Installation guide (Linux/macOS)
+├── WINDOWS_INSTALL.md           # Installation guide (Windows)
+├── CODE_EXPLANATION.md          # Code documentation
+│
+└── chrono_script_compiler_project_proposal.md  # Project proposal
+```
+
+### Generated Files (after build)
+```
+lex.yy.c                        # Generated C source from Flex
+chrono_lexer                    # Compiled executable (Linux/macOS)
+chrono_lexer.exe                # Compiled executable (Windows)
+chrono_lexer_debug              # Debug version executable
+outputs/                        # Test output directory
+```
+
+---
+
+## 💻 Usage
+
+### Method 1: Using Makefile (Recommended)
+
+#### Build the Lexer
+```bash
+make
+```
+
+#### Run on a Specific File
+```bash
+make run FILE=sample1.chrono
+make run FILE=sample2.chrono
+make run FILE=sample_math.chrono
+```
+
+#### Test All Sample Files
+```bash
+make test
+```
+This runs the lexer on all sample files and saves output to `outputs/` directory.
+
+#### Build and Run in Debug Mode
+```bash
+make debug FILE=sample_math.chrono
+```
+
+#### Clean Generated Files
+```bash
+make clean          # Remove generated files
+make distclean      # Remove generated files and outputs
+```
+
+#### Check Build Environment
+```bash
+make check
+```
+
+#### Show File Statistics
+```bash
+make stats
+```
+
+#### View All Available Commands
+```bash
+make help
+```
+
+---
+
+### Method 2: Manual Build Process
+
+#### Step 1: Generate C Source
+```bash
+flex chronoscript.l
+```
+This creates `lex.yy.c`.
+
+#### Step 2: Compile
+```bash
+gcc lex.yy.c -o chrono_lexer -lfl
+```
+
+On some systems, you may need:
+```bash
+gcc lex.yy.c -o chrono_lexer -ll
+```
+
+#### Step 3: Run
+```bash
+./chrono_lexer sample1.chrono
+```
+
+#### Debug Mode (Manual)
 ```bash
 sudo apt-get update
 sudo apt-get install flex make gcc
