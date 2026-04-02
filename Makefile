@@ -1,123 +1,196 @@
-# Makefile for ChronoScript Compiler
-# Builds lexer and parser for ChronoScript language
+# ChronoScript Compiler - Complete Makefile
+# Builds all compiler phases (Lexer, Parser, Semantic, ICG, Optimization, Target Code Gen)
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -Wextra -g -O2
 FLEX = flex
 BISON = bison
 BISON_FLAGS = -d -v
 
-# File names
-LEXER_SOURCE = chronoscript.l
-PARSER_SOURCE = chronoscript.y
+# Directories
+LEXER_DIR = lexer
+PARSER_DIR = parser
+SEMANTIC_DIR = semantic
+ICG_DIR = intermediate
+OPT_DIR = optimization
+TARGET_DIR = target
+TEST_DIR = tests
+OUTPUT_DIR = outputs
+DOCS_DIR = docs
+
+# Source files
+LEXER_SOURCE = $(LEXER_DIR)/chronoscript.l
+PARSER_SOURCE = $(PARSER_DIR)/chronoscript.y
+SEMANTIC_SOURCE = $(SEMANTIC_DIR)/semantic.c
+ICG_SOURCE = $(ICG_DIR)/icg.c
+OPT_SOURCE = $(OPT_DIR)/optimizer.c
+TARGET_SOURCE = $(TARGET_DIR)/target_codegen.c
+
+# Generated files
 LEXER_OUTPUT = lex.yy.c
 PARSER_OUTPUT_C = chronoscript.tab.c
 PARSER_OUTPUT_H = chronoscript.tab.h
 PARSER_VERBOSE = chronoscript.output
-TARGET = chronoscript_parser
+
+# Object files
+SEMANTIC_OBJ = semantic.o
+ICG_OBJ = icg.o
+OPT_OBJ = optimizer.o
+TARGET_OBJ = target_codegen.o
+
+# Executable
+TARGET_EXEC = chrono_compiler
 
 # Test files
-TEST_DIR = test_samples
-TESTS = $(TEST_DIR)/test1_declarations.cs \
-        $(TEST_DIR)/test2_expressions.cs \
-        $(TEST_DIR)/test3_control_flow.cs \
-        $(TEST_DIR)/test4_functions.cs \
-        $(TEST_DIR)/test5_comprehensive.cs
+TEST_FILES = $(TEST_DIR)/demo.cs \
+             $(TEST_DIR)/simple.cs \
+             $(TEST_DIR)/test1_declarations.cs \
+             $(TEST_DIR)/test2_expressions.cs \
+             $(TEST_DIR)/test3_control_flow.cs \
+             $(TEST_DIR)/test4_functions.cs \
+             $(TEST_DIR)/test5_comprehensive.cs
 
-# Colors for output (optional)
-GREEN = \033[0;32m
-YELLOW = \033[1;33m
-NC = \033[0m # No Color
+# Output files
+OUTPUT_FILES = $(OUTPUT_DIR)/intermediate_code.txt \
+               $(OUTPUT_DIR)/optimized_code.txt \
+               $(OUTPUT_DIR)/target_code.txt \
+               $(OUTPUT_DIR)/symbol_table.txt
 
 # Default target
-all: $(TARGET)
-	@echo "$(GREEN)Build complete! Run './$(TARGET) <file.cs>' to parse ChronoScript files$(NC)"
+.PHONY: all
+all: directories $(TARGET_EXEC)
+	@echo "======================================"
+	@echo "ChronoScript Compiler Built Successfully!"
+	@echo "======================================"
+	@echo "Run: ./$(TARGET_EXEC) <input_file.cs>"
 
-# Build the parser executable
-$(TARGET): $(LEXER_OUTPUT) $(PARSER_OUTPUT_C)
-	@echo "$(YELLOW)Compiling parser...$(NC)"
-	$(CC) $(CFLAGS) $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) -o $(TARGET) -lfl
-	@echo "$(GREEN)Parser compiled successfully!$(NC)"
+# Create necessary directories
+.PHONY: directories
+directories:
+	@mkdir -p $(OUTPUT_DIR)
+	@mkdir -p $(DOCS_DIR)
 
-# Generate lexer from Flex
+# Build the compiler
+$(TARGET_EXEC): $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(SEMANTIC_OBJ) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ)
+	@echo "Linking compiler..."
+	$(CC) $(CFLAGS) $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(SEMANTIC_OBJ) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ) -o $(TARGET_EXEC) -lfl -lm
+	@echo "Compiler executable created: $(TARGET_EXEC)"
+
+# Generate lexer
 $(LEXER_OUTPUT): $(LEXER_SOURCE)
-	@echo "$(YELLOW)Generating lexer from $(LEXER_SOURCE)...$(NC)"
+	@echo "Generating lexical analyzer..."
 	$(FLEX) $(LEXER_SOURCE)
-	@echo "$(GREEN)Lexer generated: $(LEXER_OUTPUT)$(NC)"
+	@echo "Lexer generated: $(LEXER_OUTPUT)"
 
-# Generate parser from Bison
-$(PARSER_OUTPUT_C): $(PARSER_SOURCE)
-	@echo "$(YELLOW)Generating parser from $(PARSER_SOURCE)...$(NC)"
+# Generate parser
+$(PARSER_OUTPUT_C) $(PARSER_OUTPUT_H): $(PARSER_SOURCE)
+	@echo "Generating syntax analyzer..."
 	$(BISON) $(BISON_FLAGS) $(PARSER_SOURCE)
-	@echo "$(GREEN)Parser generated: $(PARSER_OUTPUT_C), $(PARSER_OUTPUT_H)$(NC)"
+	@echo "Parser generated: $(PARSER_OUTPUT_C), $(PARSER_OUTPUT_H)"
 
-# Run all tests
-test: $(TARGET)
-	@echo "$(GREEN)========================================$(NC)"
-	@echo "$(GREEN)Running ChronoScript Parser Tests$(NC)"
-	@echo "$(GREEN)========================================$(NC)"
-	@for test in $(TESTS); do \
-		echo "$(YELLOW)\nTest: $$test$(NC)"; \
-		./$(TARGET) $$test; \
-		echo "----------------------------------------"; \
-	done
-	@echo "$(GREEN)All tests completed!$(NC)"
+# Compile semantic analyzer
+$(SEMANTIC_OBJ): $(SEMANTIC_SOURCE) $(SEMANTIC_DIR)/semantic.h
+	@echo "Compiling semantic analyzer..."
+	$(CC) $(CFLAGS) -c $(SEMANTIC_SOURCE) -o $(SEMANTIC_OBJ)
+	@echo "Semantic analyzer compiled"
 
-# Run specific test
-test1: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test1_declarations.cs
+# Compile intermediate code generator
+$(ICG_OBJ): $(ICG_SOURCE) $(ICG_DIR)/icg.h
+	@echo "Compiling intermediate code generator..."
+	$(CC) $(CFLAGS) -c $(ICG_SOURCE) -o $(ICG_OBJ)
+	@echo "ICG compiled"
 
-test2: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test2_expressions.cs
+# Compile optimizer
+$(OPT_OBJ): $(OPT_SOURCE) $(OPT_DIR)/optimizer.h $(ICG_DIR)/icg.h
+	@echo "Compiling code optimizer..."
+	$(CC) $(CFLAGS) -c $(OPT_SOURCE) -o $(OPT_OBJ) -I$(ICG_DIR)
+	@echo "Optimizer compiled"
 
-test3: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test3_control_flow.cs
+# Compile target code generator
+$(TARGET_OBJ): $(TARGET_SOURCE) $(TARGET_DIR)/target_codegen.h $(ICG_DIR)/icg.h
+	@echo "Compiling target code generator..."
+	$(CC) $(CFLAGS) -c $(TARGET_SOURCE) -o $(TARGET_OBJ) -I$(ICG_DIR)
+	@echo "Target code generator compiled"
 
-test4: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test4_functions.cs
+# Run tests
+.PHONY: test
+test: $(TARGET_EXEC)
+	@echo "======================================"
+	@echo "Running ChronoScript Compiler Tests"
+	@echo "======================================"
+	@echo ""
+	@echo "Test 1: Simple Program"
+	@./$(TARGET_EXEC) $(TEST_DIR)/simple.cs
+	@echo ""
+	@echo "Test 2: Demo Program"
+	@./$(TARGET_EXEC) $(TEST_DIR)/demo.cs
+	@echo ""
+	@echo "Test 3: Declarations"
+	@./$(TARGET_EXEC) $(TEST_DIR)/test1_declarations.cs
+	@echo ""
+	@echo "======================================"
+	@echo "All tests completed!"
+	@echo "======================================"
 
-test5: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test5_comprehensive.cs
-
-test6: $(TARGET)
-	./$(TARGET) $(TEST_DIR)/test6_errors.cs
-
-# Check for grammar conflicts
-check-grammar: $(PARSER_SOURCE)
-	@echo "$(YELLOW)Checking grammar for conflicts...$(NC)"
-	$(BISON) $(BISON_FLAGS) $(PARSER_SOURCE)
-	@if [ -f $(PARSER_VERBOSE) ]; then \
-		echo "$(GREEN)Grammar report generated: $(PARSER_VERBOSE)$(NC)"; \
-		grep -A 5 "conflict" $(PARSER_VERBOSE) || echo "$(GREEN)No conflicts found!$(NC)"; \
+# Run a specific test file
+.PHONY: run
+run: $(TARGET_EXEC)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make run FILE=<filename.cs>"; \
+	else \
+		echo "Compiling $(FILE)..."; \
+		./$(TARGET_EXEC) $(FILE); \
 	fi
 
-# Clean generated files
+# Clean build artifacts
+.PHONY: clean
 clean:
-	@echo "$(YELLOW)Cleaning generated files...$(NC)"
-	rm -f $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(PARSER_OUTPUT_H) $(PARSER_VERBOSE) $(TARGET)
-	@echo "$(GREEN)Clean complete!$(NC)"
+	@echo "Cleaning build artifacts..."
+	rm -f $(LEXER_OUTPUT)
+	rm -f $(PARSER_OUTPUT_C) $(PARSER_OUTPUT_H) $(PARSER_VERBOSE)
+	rm -f *.o
+	rm -f $(TARGET_EXEC)
+	rm -f $(TARGET_EXEC).exe
+	@echo "Clean complete"
 
-# Clean and rebuild
-rebuild: clean all
+# Clean everything including outputs
+.PHONY: cleanall
+cleanall: clean
+	@echo "Cleaning output files..."
+	rm -f $(OUTPUT_DIR)/*.txt
+	@echo "All files cleaned"
 
-# Help message
+# Install dependencies (Linux/macOS)
+.PHONY: install-deps
+install-deps:
+	@echo "Installing dependencies..."
+	@echo "For Ubuntu/Debian:"
+	@echo "  sudo apt-get install flex bison gcc"
+	@echo "For macOS:"
+	@echo "  brew install flex bison gcc"
+	@echo "For Windows:"
+	@echo "  Use MinGW or Cygwin"
+
+# Display help
+.PHONY: help
 help:
-	@echo "ChronoScript Parser Makefile"
-	@echo "============================"
+	@echo "ChronoScript Compiler Makefile"
+	@echo "================================"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make              - Build the parser (default)"
-	@echo "  make test         - Run all test programs"
-	@echo "  make test1-6      - Run specific test (e.g., make test1)"
-	@echo "  make check-grammar - Check for grammar conflicts"
-	@echo "  make clean        - Remove generated files"
-	@echo "  make rebuild      - Clean and rebuild"
-	@echo "  make help         - Show this help message"
+	@echo "  all         - Build the complete compiler (default)"
+	@echo "  test        - Run all test programs"
+	@echo "  run FILE=<file> - Compile a specific ChronoScript file"
+	@echo "  clean       - Remove build artifacts"
+	@echo "  cleanall    - Remove all generated files"
+	@echo "  help        - Display this help message"
 	@echo ""
-	@echo "Usage:"
-	@echo "  ./$(TARGET) <input_file.cs>    - Parse a ChronoScript file"
-	@echo "  ./$(TARGET)                     - Parse from stdin"
+	@echo "Examples:"
+	@echo "  make                           # Build compiler"
+	@echo "  make test                      # Run tests"
+	@echo "  make run FILE=tests/demo.cs    # Compile demo.cs"
+	@echo "  make clean                     # Clean build files"
 
-# Phony targets (not actual files)
-.PHONY: all test test1 test2 test3 test4 test5 test6 check-grammar clean rebuild help
+# Phony targets
+.PHONY: all directories test run clean cleanall install-deps help
