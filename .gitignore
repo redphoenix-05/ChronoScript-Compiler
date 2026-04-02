@@ -1,0 +1,38 @@
+# Compiler build artifacts
+*.o
+*.out
+*.exe
+chrono_compiler
+chrono_compiler.exe
+
+# Flex/Bison generated files
+lex.yy.c
+chronoscript.tab.c
+chronoscript.tab.h
+chronoscript.output
+
+# Output files from compilation
+outputs/*.txt
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Internal documentation (NOT for GitHub)
+docs/code_explanation.md
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+temp/
