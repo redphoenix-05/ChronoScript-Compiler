@@ -28,6 +28,7 @@ desktop.ini
 
 # Internal documentation (NOT for GitHub)
 docs/code_explanation.md
+docs/running_process.md
 
 # Backup files
 *.bak
