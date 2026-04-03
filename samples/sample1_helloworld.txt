@@ -1,5 +1,0 @@
-// Sample 1: Hello World Program
-Event main() {
-    Broadcast("Hello, World!");
-    Resolve 0;
-}
