@@ -337,69 +337,431 @@ TacOpcode get_tac_opcode_from_operator(const char* operator) {
 }
 
 /* ============================================================
-   MAIN TAC GENERATION STUB
-   Note: These functions are stubs that would integrate with
-   the actual AST structure from the parser
+   REAL AST TRAVERSAL - ICG
+   Walks the ASTNode tree produced by the parser and emits TAC.
    ============================================================ */
 
-TacCode* generate_intermediate_code(void* ast_root) {
-    TacCode* code = create_tac_code();
-    
-    printf("\n========================================\n");
-    printf("   INTERMEDIATE CODE GENERATION\n");
-    printf("========================================\n");
-    printf("Generating 3-address code...\n");
-    
-    /* This is a simplified stub. In a full implementation,
-       this would traverse the actual AST structure */
-    
-    /* Example: Generate sample TAC for demonstration */
-    TacInstruction* instr;
-    
-    /* Function start */
-    instr = create_tac_instruction(TAC_FUNCTION_START, "main", NULL, NULL);
-    append_tac_instruction(code, instr);
-    
-    /* Example arithmetic: t0 = a + b */
-    char* t0 = new_temp(code);
-    instr = create_tac_instruction(TAC_ADD, t0, "a", "b");
-    append_tac_instruction(code, instr);
-    
-    /* Example assignment: x = t0 */
-    instr = create_tac_instruction(TAC_ASSIGN, "x", t0, NULL);
-    append_tac_instruction(code, instr);
-    
-    /* Example comparison: t1 = x < 10 */
-    char* t1 = new_temp(code);
-    instr = create_tac_instruction(TAC_LT, t1, "x", "10");
-    append_tac_instruction(code, instr);
-    
-    /* Example conditional jump */
-    char* label1 = new_label(code);
-    instr = create_tac_instruction(TAC_IF_FALSE_GOTO, label1, t1, NULL);
-    append_tac_instruction(code, instr);
-    
-    /* Print statement */
-    instr = create_tac_instruction(TAC_PRINT, NULL, "x", NULL);
-    append_tac_instruction(code, instr);
-    
-    /* Label */
-    instr = create_tac_instruction(TAC_LABEL, label1, NULL, NULL);
-    append_tac_instruction(code, instr);
-    
-    /* Function end */
-    instr = create_tac_instruction(TAC_FUNCTION_END, "main", NULL, NULL);
-    append_tac_instruction(code, instr);
-    
-    free(t0);
-    free(t1);
-    free(label1);
-    
-    printf("Intermediate code generation complete!\n");
-    printf("========================================\n\n");
-    
-    return code;
+/* Labels used by the current loop for break/continue */
+static char *icg_break_label    = NULL;
+static char *icg_continue_label = NULL;
+
+/* Forward declarations of static helpers */
+static char *icg_gen_expr(ASTNode *node, TacCode *code);
+static void  icg_gen_stmt(ASTNode *node, TacCode *code);
+static void  icg_gen_compound(ASTNode *node, TacCode *code);
+static void  icg_gen_stmt_list(ASTNode *node, TacCode *code);
+static void  icg_gen_decl_list(ASTNode *node, TacCode *code);
+
+/* ------------------------------------------------------------------
+   Expression code generation
+   Returns a heap-allocated string naming the result operand.
+   Caller must free it.
+   ------------------------------------------------------------------ */
+static char *icg_gen_expr(ASTNode *node, TacCode *code) {
+    if (!node) return strdup("_void");
+
+    char buf[128];
+
+    switch (node->type) {
+
+    case NODE_INTEGER_LITERAL:
+        snprintf(buf, sizeof(buf), "%d", node->intval);
+        return strdup(buf);
+
+    case NODE_FLOAT_LITERAL:
+        snprintf(buf, sizeof(buf), "%g", node->floatval);
+        return strdup(buf);
+
+    case NODE_CHAR_LITERAL:
+        snprintf(buf, sizeof(buf), "'%c'", node->charval);
+        return strdup(buf);
+
+    case NODE_STRING_LITERAL: {
+        char *res = (char *)malloc(strlen(node->value) + 3);
+        sprintf(res, "\"%s\"", node->value);
+        return res;
+    }
+
+    case NODE_IDENTIFIER:
+        return strdup(node->value ? node->value : "_anon");
+
+    case NODE_ARRAY_ACCESS: {
+        char *arr = icg_gen_expr(node->child[0], code);
+        char *idx = icg_gen_expr(node->child[1], code);
+        char *tmp = new_temp(code);
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_ARRAY_READ, tmp, arr, idx));
+        free(arr); free(idx);
+        return tmp;
+    }
+
+    case NODE_UNARY_EXPR: {
+        char *operand = icg_gen_expr(node->child[0], code);
+        char *tmp = new_temp(code);
+        TacOpcode op = TAC_UMINUS;
+        if (node->op) {
+            if (strcmp(node->op, "!") == 0) op = TAC_NOT;
+            else if (strcmp(node->op, "+") == 0) op = TAC_UPLUS;
+        }
+        append_tac_instruction(code,
+            create_tac_instruction(op, tmp, operand, NULL));
+        free(operand);
+        return tmp;
+    }
+
+    case NODE_BINARY_EXPR: {
+        if (!node->op) return strdup("_void");
+
+        /* Simple assignment: lhs = rhs */
+        if (strcmp(node->op, "=") == 0) {
+            char *rhs = icg_gen_expr(node->child[1], code);
+            if (node->child[0] && node->child[0]->type == NODE_IDENTIFIER) {
+                append_tac_instruction(code,
+                    create_tac_instruction(TAC_ASSIGN,
+                        node->child[0]->value, rhs, NULL));
+                char *ret = strdup(node->child[0]->value);
+                free(rhs);
+                return ret;
+            }
+            if (node->child[0] &&
+                node->child[0]->type == NODE_ARRAY_ACCESS) {
+                char *arr = icg_gen_expr(node->child[0]->child[0], code);
+                char *idx = icg_gen_expr(node->child[0]->child[1], code);
+                append_tac_instruction(code,
+                    create_tac_instruction(TAC_ARRAY_WRITE, arr, idx, rhs));
+                char *ret = strdup(rhs);
+                free(arr); free(idx); free(rhs);
+                return ret;
+            }
+            return rhs;
+        }
+
+        /* Compound assignment: lhs op= rhs */
+        if (node->op[1] == '=' && node->op[2] == '\0' &&
+            node->child[0] &&
+            node->child[0]->type == NODE_IDENTIFIER) {
+            const char *lhs_name = node->child[0]->value;
+            char *rhs = icg_gen_expr(node->child[1], code);
+            char *tmp = new_temp(code);
+            char op_char[2] = { node->op[0], '\0' };
+            TacOpcode tac_op = get_tac_opcode_from_operator(op_char);
+            append_tac_instruction(code,
+                create_tac_instruction(tac_op, tmp, lhs_name, rhs));
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_ASSIGN, lhs_name, tmp, NULL));
+            free(rhs); free(tmp);
+            return strdup(lhs_name);
+        }
+
+        /* Arithmetic / relational / logical / bitwise */
+        char *left  = icg_gen_expr(node->child[0], code);
+        char *right = icg_gen_expr(node->child[1], code);
+        char *tmp   = new_temp(code);
+        TacOpcode tac_op = get_tac_opcode_from_operator(node->op);
+        append_tac_instruction(code,
+            create_tac_instruction(tac_op, tmp, left, right));
+        free(left); free(right);
+        return tmp;
+    }
+
+    case NODE_CALL_EXPR: {
+        if (!node->child[0]) return strdup("_void");
+        const char *fname = node->child[0]->value;
+        if (!fname) return strdup("_void");
+
+        /* Evaluate arguments and collect names */
+#define MAX_ARGS 32
+        char *arg_names[MAX_ARGS];
+        int argc = 0;
+        ASTNode *arg = node->child[1];
+        while (arg && argc < MAX_ARGS) {
+            arg_names[argc++] = icg_gen_expr(arg, code);
+            arg = arg->sibling;
+        }
+        /* Emit PARAMs */
+        for (int i = 0; i < argc; i++) {
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_PARAM, NULL, arg_names[i], NULL));
+            free(arg_names[i]);
+        }
+#undef MAX_ARGS
+        char argc_buf[16];
+        snprintf(argc_buf, sizeof(argc_buf), "%d", argc);
+        char *tmp = new_temp(code);
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_CALL, tmp, fname, argc_buf));
+        return tmp;
+    }
+
+    default:
+        return strdup("_unk");
+    }
 }
 
-/* Additional generation functions would be implemented here
-   to handle the full AST traversal */
+/* ------------------------------------------------------------------
+   Statement code generation
+   ------------------------------------------------------------------ */
+static void icg_gen_stmt(ASTNode *node, TacCode *code) {
+    if (!node) return;
+
+    switch (node->type) {
+
+    case NODE_EXPR_STMT:
+        if (node->child[0]) {
+            char *v = icg_gen_expr(node->child[0], code);
+            free(v);
+        }
+        break;
+
+    case NODE_PRINT_STMT: {
+        char *val = icg_gen_expr(node->child[0], code);
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_PRINT, NULL, val, NULL));
+        free(val);
+        break;
+    }
+
+    case NODE_INPUT_STMT: {
+        const char *name =
+            (node->child[0] && node->child[0]->value)
+            ? node->child[0]->value : "_anon";
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_READ, NULL, name, NULL));
+        break;
+    }
+
+    case NODE_IF_STMT: {
+        char *cond      = icg_gen_expr(node->child[0], code);
+        char *false_lbl = new_label(code);
+        char *end_lbl   = node->child[2] ? new_label(code) : NULL;
+
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_IF_FALSE_GOTO, false_lbl, cond, NULL));
+        free(cond);
+
+        icg_gen_stmt(node->child[1], code);  /* then */
+
+        if (node->child[2]) {
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_GOTO, end_lbl, NULL, NULL));
+        }
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, false_lbl, NULL, NULL));
+
+        if (node->child[2]) {
+            icg_gen_stmt(node->child[2], code);  /* else */
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_LABEL, end_lbl, NULL, NULL));
+            free(end_lbl);
+        }
+        free(false_lbl);
+        break;
+    }
+
+    case NODE_WHILE_STMT: {
+        char *start_lbl = new_label(code);
+        char *exit_lbl  = new_label(code);
+        char *saved_break    = icg_break_label;
+        char *saved_continue = icg_continue_label;
+        icg_break_label      = exit_lbl;
+        icg_continue_label   = start_lbl;
+
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, start_lbl, NULL, NULL));
+
+        char *cond = icg_gen_expr(node->child[0], code);
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_IF_FALSE_GOTO, exit_lbl, cond, NULL));
+        free(cond);
+
+        icg_gen_stmt(node->child[1], code);
+
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_GOTO, start_lbl, NULL, NULL));
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, exit_lbl, NULL, NULL));
+
+        icg_break_label    = saved_break;
+        icg_continue_label = saved_continue;
+        free(start_lbl);
+        free(exit_lbl);
+        break;
+    }
+
+    case NODE_FOR_STMT: {
+        char *cond_lbl = new_label(code);
+        char *incr_lbl = new_label(code);
+        char *exit_lbl = new_label(code);
+        char *saved_break    = icg_break_label;
+        char *saved_continue = icg_continue_label;
+        icg_break_label      = exit_lbl;
+        icg_continue_label   = incr_lbl;
+
+        /* init */
+        if (node->child[0]) {
+            if (node->child[0]->type == NODE_VAR_DECL ||
+                node->child[0]->type == NODE_ARRAY_DECL)
+                icg_gen_decl_list(node->child[0], code);
+            else
+                icg_gen_stmt(node->child[0], code);
+        }
+
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, cond_lbl, NULL, NULL));
+
+        /* condition */
+        if (node->child[1] && node->child[1]->child[0]) {
+            char *cond = icg_gen_expr(node->child[1]->child[0], code);
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_IF_FALSE_GOTO, exit_lbl, cond, NULL));
+            free(cond);
+        }
+
+        /* body */
+        icg_gen_stmt(node->child[3], code);
+
+        /* increment label + expression */
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, incr_lbl, NULL, NULL));
+        if (node->child[2]) {
+            char *inc = icg_gen_expr(node->child[2], code);
+            free(inc);
+        }
+
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_GOTO, cond_lbl, NULL, NULL));
+        append_tac_instruction(code,
+            create_tac_instruction(TAC_LABEL, exit_lbl, NULL, NULL));
+
+        icg_break_label    = saved_break;
+        icg_continue_label = saved_continue;
+        free(cond_lbl); free(incr_lbl); free(exit_lbl);
+        break;
+    }
+
+    case NODE_RETURN_STMT: {
+        if (node->child[0]) {
+            char *val = icg_gen_expr(node->child[0], code);
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_RETURN, NULL, val, NULL));
+            free(val);
+        } else {
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_RETURN_VOID, NULL, NULL, NULL));
+        }
+        break;
+    }
+
+    case NODE_BREAK_STMT:
+        if (icg_break_label)
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_GOTO, icg_break_label, NULL, NULL));
+        break;
+
+    case NODE_CONTINUE_STMT:
+        if (icg_continue_label)
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_GOTO, icg_continue_label, NULL, NULL));
+        break;
+
+    case NODE_COMPOUND_STMT:
+        icg_gen_compound(node, code);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void icg_gen_stmt_list(ASTNode *node, TacCode *code) {
+    while (node) {
+        ASTNode *cur = (node->type == NODE_STMT_LIST) ? node->child[0] : node;
+        icg_gen_stmt(cur, code);
+        node = node->sibling;
+    }
+}
+
+static void icg_gen_decl_list(ASTNode *node, TacCode *code) {
+    while (node) {
+        ASTNode *cur = (node->type == NODE_DECL_LIST) ? node->child[0] : node;
+        if (cur && cur->type == NODE_VAR_DECL && cur->value && cur->child[1]) {
+            char *init = icg_gen_expr(cur->child[1], code);
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_ASSIGN, cur->value, init, NULL));
+            free(init);
+        }
+        node = node->sibling;
+    }
+}
+
+static void icg_gen_compound(ASTNode *node, TacCode *code) {
+    if (!node) return;
+    if (node->child[0] && node->child[0]->type == NODE_DECL_LIST) {
+        icg_gen_decl_list(node->child[0], code);
+        if (node->child[1] && node->child[1]->type == NODE_STMT_LIST)
+            icg_gen_stmt_list(node->child[1], code);
+    } else if (node->child[0] && node->child[0]->type == NODE_STMT_LIST) {
+        icg_gen_stmt_list(node->child[0], code);
+    }
+}
+
+/* ------------------------------------------------------------------
+   Main entry point: walk the whole AST
+   ------------------------------------------------------------------ */
+TacCode* generate_intermediate_code(ASTNode* ast_root) {
+    TacCode *code = create_tac_code();
+
+    printf("Generating intermediate (3-address) code...\n");
+
+    if (!ast_root || !ast_root->child[0]) {
+        printf("(empty program)\n");
+        return code;
+    }
+
+    icg_break_label    = NULL;
+    icg_continue_label = NULL;
+
+    ASTNode *decl = ast_root->child[0];
+    while (decl) {
+        ASTNode *cur = (decl->type == NODE_DECL_LIST) ? decl->child[0] : decl;
+
+        if (cur && cur->type == NODE_FUNC_DECL && cur->value) {
+            /* Function prolog */
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_FUNCTION_START,
+                                       cur->value, NULL, NULL));
+
+            /* Declare parameters */
+            ASTNode *pn = cur->child[1];
+            while (pn) {
+                ASTNode *param =
+                    (pn->type == NODE_PARAM_LIST) ? pn->child[0] : pn;
+                if (param && param->value)
+                    append_tac_instruction(code,
+                        create_tac_instruction(TAC_PARAM,
+                                               param->value, NULL, NULL));
+                pn = pn->sibling;
+            }
+
+            /* Function body */
+            icg_gen_compound(cur->child[2], code);
+
+            /* Function epilog */
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_FUNCTION_END,
+                                       cur->value, NULL, NULL));
+
+        } else if (cur && cur->type == NODE_VAR_DECL &&
+                   cur->value && cur->child[1]) {
+            /* Top-level initialized global variable */
+            char *init = icg_gen_expr(cur->child[1], code);
+            append_tac_instruction(code,
+                create_tac_instruction(TAC_ASSIGN, cur->value, init, NULL));
+            free(init);
+        }
+        decl = decl->sibling;
+    }
+
+    printf("Intermediate code generation complete!\n");
+    return code;
+}

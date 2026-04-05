@@ -198,4 +198,3 @@ The compiler serves as a practical academic exercise and a demonstration of how 
 2. Flex Manual – https://westes.github.io/flex/manual/
 3. Bison Manual – https://www.gnu.org/software/bison/manual/
 4. C Programming Language – https://en.cppreference.com/
-

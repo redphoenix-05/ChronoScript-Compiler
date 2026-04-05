@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Shared AST types (defined in project root ast.h) */
+#include "../ast.h"
+
 /* TAC instruction types */
 typedef enum {
     TAC_ADD,          // t = a + b
@@ -97,25 +100,6 @@ void append_tac_code(TacCode* dest, TacCode* src);
 char* new_temp(TacCode* code);
 char* new_label(TacCode* code);
 
-/* TAC generation from expressions */
-char* generate_expression_tac(void* ast_node, TacCode* code);
-char* generate_binary_expr_tac(void* ast_node, TacCode* code);
-char* generate_unary_expr_tac(void* ast_node, TacCode* code);
-char* generate_assignment_tac(void* ast_node, TacCode* code);
-
-/* TAC generation from statements */
-void generate_statement_tac(void* ast_node, TacCode* code);
-void generate_if_statement_tac(void* ast_node, TacCode* code);
-void generate_while_statement_tac(void* ast_node, TacCode* code);
-void generate_for_statement_tac(void* ast_node, TacCode* code);
-void generate_return_statement_tac(void* ast_node, TacCode* code);
-void generate_function_call_tac(void* ast_node, TacCode* code);
-void generate_print_statement_tac(void* ast_node, TacCode* code);
-
-/* TAC generation from declarations */
-void generate_function_tac(void* ast_node, TacCode* code);
-void generate_variable_declaration_tac(void* ast_node, TacCode* code);
-
 /* TAC output */
 void print_tac_instruction(TacInstruction* instr, FILE* output);
 void print_tac_code(TacCode* code, FILE* output);
@@ -126,8 +110,9 @@ const char* get_opcode_string(TacOpcode opcode);
 int is_binary_opcode(TacOpcode opcode);
 int is_unary_opcode(TacOpcode opcode);
 int is_comparison_opcode(TacOpcode opcode);
+TacOpcode get_tac_opcode_from_operator(const char* operator_str);
 
 /* Main TAC generation function */
-TacCode* generate_intermediate_code(void* ast_root);
+TacCode* generate_intermediate_code(ASTNode* ast_root);
 
 #endif /* ICG_H */

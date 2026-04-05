@@ -3,111 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-union {
-    int intval;
-    float floatval;
-    double doubleval;
-    char charval;
-    char* strval;
-} yylval;
+#include "chronoscript.tab.h"
 
 #ifdef DEBUG
     #define DEBUG_PRINT(token) printf("Line %d: Token %s ('%s')\n", yylineno, token, yytext)
 #else
     #define DEBUG_PRINT(token)
 #endif
-
-#define VOID            1
-#define TRUTH           2
-#define MATTER          3
-#define ATOM            4
-#define STREAM          5
-#define ENERGY          6
-#define HIGH_ENERGY     7
-#define PURE_MATTER     8
-#define LARGE_MATTER    9
-#define FULL_ENERGY     10
-#define SMALL_MATTER    11
-
-#define FLUX            12
-#define FIXED           13
-
-#define TIMELINE        14
-#define STRUCTURE       15
-#define UNISON          16
-#define INSTANCE        17
-
-#define EVENT           18
-#define PERSIST         19
-#define ESCAPE          20
-#define RESOLVE         21
-#define OBSERVE         22
-#define BROADCAST       23
-
-#define ERA             24
-#define ALTERNATE       25
-#define LOOP            26
-#define DIVERGE         27
-#define REFORGE         28
-#define STANDARD        29
-#define PERSPECTIVE     30
-
-#define PLUS            31
-#define MINUS           32
-#define MULTIPLY        33
-#define DIVIDE          34
-#define MODULO          35
-
-#define ASSIGN          36
-#define EQUAL           37
-#define NOT_EQUAL       38
-#define GREATER         39
-#define LESS            40
-#define GREATER_EQUAL   41
-#define LESS_EQUAL      42
-
-#define LOGICAL_AND     43
-#define LOGICAL_OR      44
-#define LOGICAL_NOT     45
-
-#define BITWISE_AND     46
-#define BITWISE_OR      47
-#define BITWISE_XOR     48
-#define LEFT_SHIFT      49
-#define RIGHT_SHIFT     50
-
-#define LBRACE          51
-#define RBRACE          52
-#define LPAREN          53
-#define RPAREN          54
-#define SEMICOLON       55
-#define COMMA           56
-#define LBRACKET        76
-#define RBRACKET        77
-#define DOT             78
-#define COLON           79
-
-#define SINE            57
-#define COSINE          58
-#define TANGENT         59
-#define INV_SINE        60
-#define INV_COSINE      61
-#define INV_TANGENT     62
-#define LOGARITHM       63
-#define POWER           64
-#define ABSOLUTE        65
-#define FLOOR_FUNC      66
-#define CEILING_FUNC    67
-#define SQUAREROOT      68
-
-#define INCORPORATE     69
-#define CONSTANT        70
-
-#define INTEGER_LITERAL 71
-#define FLOAT_LITERAL   72
-#define CHAR_LITERAL    73
-#define STRING_LITERAL  74
-#define IDENTIFIER      75
 
 %}
 
@@ -126,7 +28,10 @@ NEWLINE         \n
 
 %%
 
-"#Incorporate"      { DEBUG_PRINT("INCORPORATE"); return INCORPORATE; }
+"SingularityCheck" { DEBUG_PRINT("SINGULARITY_CHECK"); return SINGULARITY_CHECK; }
+"MassAccumulation"  { DEBUG_PRINT("MASS_ACCUMULATION");  return MASS_ACCUMULATION; }
+
+"#Incorporate"[^\n]*    { /* skip include/import directives */ }
 "#Constant"         { DEBUG_PRINT("CONSTANT"); return CONSTANT; }
 
 "Void"              { DEBUG_PRINT("VOID"); return VOID; }
@@ -180,6 +85,12 @@ NEWLINE         \n
 "<<"                { DEBUG_PRINT("LEFT_SHIFT"); return LEFT_SHIFT; }
 ">>"                { DEBUG_PRINT("RIGHT_SHIFT"); return RIGHT_SHIFT; }
 "=="                { DEBUG_PRINT("EQUAL"); return EQUAL; }
+"+="                { DEBUG_PRINT("PLUS_ASSIGN"); return PLUS_ASSIGN; }
+"-="                { DEBUG_PRINT("MINUS_ASSIGN"); return MINUS_ASSIGN; }
+"*="                { DEBUG_PRINT("MULTIPLY_ASSIGN"); return MULTIPLY_ASSIGN; }
+"/="                { DEBUG_PRINT("DIVIDE_ASSIGN"); return DIVIDE_ASSIGN; }
+"%="                { DEBUG_PRINT("MODULO_ASSIGN"); return MODULO_ASSIGN; }
+
 "!="                { DEBUG_PRINT("NOT_EQUAL"); return NOT_EQUAL; }
 ">="                { DEBUG_PRINT("GREATER_EQUAL"); return GREATER_EQUAL; }
 "<="                { DEBUG_PRINT("LESS_EQUAL"); return LESS_EQUAL; }
@@ -217,7 +128,7 @@ NEWLINE         \n
                     }
 
 {FLOAT}             { 
-                        yylval.doubleval = atof(yytext); 
+                        yylval.floatval = atof(yytext); 
                         DEBUG_PRINT("FLOAT_LITERAL"); 
                         return FLOAT_LITERAL; 
                     }
@@ -417,6 +328,8 @@ void process_file(const char* input_file, const char* output_file) {
     fclose(output);
 }
 
+/* Standalone lexer driver retained for token-dump workflows only. */
+#ifdef LEXER_STANDALONE
 int main(int argc, char** argv) {
     printf("ChronoScript Lexical Analyzer\n");
     printf("==============================\n\n");
@@ -451,3 +364,4 @@ int main(int argc, char** argv) {
     
     return 0;
 }
+#endif
