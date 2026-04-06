@@ -18,7 +18,7 @@
 #include <string.h>
 
 /* Shared AST types (defined in project root ast.h) */
-#include "../ast.h"
+#include "ast.h"
 
 /* TAC instruction types */
 typedef enum {

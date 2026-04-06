@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../intermediate/icg.h"
+#include "icg.h"
 
 /* Target code instruction types */
 typedef enum {

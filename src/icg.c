@@ -3,7 +3,7 @@
  * Phase 4: Intermediate Code Generation (3-Address Code)
  */
 
-#include "icg.h"
+#include "../include/icg.h"
 
 /* ============================================================
    TAC CODE MANAGEMENT

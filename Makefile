@@ -9,23 +9,19 @@ BISON = bison
 BISON_FLAGS = -d -v
 
 # Directories
-LEXER_DIR = lexer
-PARSER_DIR = parser
-SEMANTIC_DIR = semantic
-ICG_DIR = intermediate
-OPT_DIR = optimization
-TARGET_DIR = target
+GRAMMAR_DIR = grammar
+INCLUDE_DIR = include
+SRC_DIR = src
+EXAMPLES_DIR = examples
 TEST_DIR = tests
 OUTPUT_DIR = outputs
-DOCS_DIR = docs
 
 # Source files
-LEXER_SOURCE = $(LEXER_DIR)/chronoscript.l
-PARSER_SOURCE = $(PARSER_DIR)/chronoscript.y
-SEMANTIC_SOURCE = $(SEMANTIC_DIR)/semantic.c
-ICG_SOURCE = $(ICG_DIR)/icg.c
-OPT_SOURCE = $(OPT_DIR)/optimizer.c
-TARGET_SOURCE = $(TARGET_DIR)/target_codegen.c
+LEXER_SOURCE = $(GRAMMAR_DIR)/chronoscript.l
+PARSER_SOURCE = $(GRAMMAR_DIR)/chronoscript.y
+ICG_SOURCE = $(SRC_DIR)/icg.c
+OPT_SOURCE = $(SRC_DIR)/optimizer.c
+TARGET_SOURCE = $(SRC_DIR)/target_codegen.c
 
 # Generated files
 LEXER_OUTPUT = lex.yy.c
@@ -34,7 +30,6 @@ PARSER_OUTPUT_H = chronoscript.tab.h
 PARSER_VERBOSE = chronoscript.output
 
 # Object files
-SEMANTIC_OBJ = semantic.o
 ICG_OBJ = icg.o
 OPT_OBJ = optimizer.o
 TARGET_OBJ = target_codegen.o
@@ -43,13 +38,15 @@ TARGET_OBJ = target_codegen.o
 TARGET_EXEC = chrono_compiler
 
 # Test files
-TEST_FILES = $(TEST_DIR)/demo.cs \
-             $(TEST_DIR)/simple.cs \
-             $(TEST_DIR)/test1_declarations.cs \
+TEST_FILES = $(TEST_DIR)/test1_declarations.cs \
              $(TEST_DIR)/test2_expressions.cs \
              $(TEST_DIR)/test3_control_flow.cs \
              $(TEST_DIR)/test4_functions.cs \
              $(TEST_DIR)/test5_comprehensive.cs
+
+EXAMPLE_FILES = $(EXAMPLES_DIR)/simple.cs \
+                $(EXAMPLES_DIR)/demo.cs \
+                $(EXAMPLES_DIR)/calculator.cs
 
 # Output files
 OUTPUT_FILES = $(OUTPUT_DIR)/intermediate_code.txt \
@@ -69,48 +66,41 @@ all: directories $(TARGET_EXEC)
 .PHONY: directories
 directories:
 	@mkdir -p $(OUTPUT_DIR)
-	@mkdir -p $(DOCS_DIR)
 
 # Build the compiler
-$(TARGET_EXEC): $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(SEMANTIC_OBJ) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ)
+$(TARGET_EXEC): $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ)
 	@echo "Linking compiler..."
-	$(CC) $(CFLAGS) $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(SEMANTIC_OBJ) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ) -o $(TARGET_EXEC) -lfl -lm
+	$(CC) $(CFLAGS) $(LEXER_OUTPUT) $(PARSER_OUTPUT_C) $(ICG_OBJ) $(OPT_OBJ) $(TARGET_OBJ) -o $(TARGET_EXEC) -lfl -lm
 	@echo "Compiler executable created: $(TARGET_EXEC)"
 
 # Generate lexer
 $(LEXER_OUTPUT): $(LEXER_SOURCE)
 	@echo "Generating lexical analyzer..."
-	$(FLEX) $(LEXER_SOURCE)
+	cd $(GRAMMAR_DIR) && $(FLEX) chronoscript.l && mv lex.yy.c ../$(LEXER_OUTPUT)
 	@echo "Lexer generated: $(LEXER_OUTPUT)"
 
 # Generate parser
 $(PARSER_OUTPUT_C) $(PARSER_OUTPUT_H): $(PARSER_SOURCE)
 	@echo "Generating syntax analyzer..."
-	$(BISON) $(BISON_FLAGS) $(PARSER_SOURCE)
+	$(BISON) $(BISON_FLAGS) -o $(PARSER_OUTPUT_C) $(PARSER_SOURCE)
 	@echo "Parser generated: $(PARSER_OUTPUT_C), $(PARSER_OUTPUT_H)"
 
-# Compile semantic analyzer
-$(SEMANTIC_OBJ): $(SEMANTIC_SOURCE) $(SEMANTIC_DIR)/semantic.h
-	@echo "Compiling semantic analyzer..."
-	$(CC) $(CFLAGS) -c $(SEMANTIC_SOURCE) -o $(SEMANTIC_OBJ)
-	@echo "Semantic analyzer compiled"
-
 # Compile intermediate code generator
-$(ICG_OBJ): $(ICG_SOURCE) $(ICG_DIR)/icg.h
+$(ICG_OBJ): $(ICG_SOURCE) $(INCLUDE_DIR)/icg.h
 	@echo "Compiling intermediate code generator..."
-	$(CC) $(CFLAGS) -c $(ICG_SOURCE) -o $(ICG_OBJ)
+	$(CC) $(CFLAGS) -c $(ICG_SOURCE) -o $(ICG_OBJ) -I.
 	@echo "ICG compiled"
 
 # Compile optimizer
-$(OPT_OBJ): $(OPT_SOURCE) $(OPT_DIR)/optimizer.h $(ICG_DIR)/icg.h
+$(OPT_OBJ): $(OPT_SOURCE) $(INCLUDE_DIR)/optimizer.h $(INCLUDE_DIR)/icg.h
 	@echo "Compiling code optimizer..."
-	$(CC) $(CFLAGS) -c $(OPT_SOURCE) -o $(OPT_OBJ) -I$(ICG_DIR)
+	$(CC) $(CFLAGS) -c $(OPT_SOURCE) -o $(OPT_OBJ) -I.
 	@echo "Optimizer compiled"
 
 # Compile target code generator
-$(TARGET_OBJ): $(TARGET_SOURCE) $(TARGET_DIR)/target_codegen.h $(ICG_DIR)/icg.h
+$(TARGET_OBJ): $(TARGET_SOURCE) $(INCLUDE_DIR)/target_codegen.h $(INCLUDE_DIR)/icg.h
 	@echo "Compiling target code generator..."
-	$(CC) $(CFLAGS) -c $(TARGET_SOURCE) -o $(TARGET_OBJ) -I$(ICG_DIR)
+	$(CC) $(CFLAGS) -c $(TARGET_SOURCE) -o $(TARGET_OBJ) -I.
 	@echo "Target code generator compiled"
 
 # Run tests
@@ -121,10 +111,10 @@ test: $(TARGET_EXEC)
 	@echo "======================================"
 	@echo ""
 	@echo "Test 1: Simple Program"
-	@./$(TARGET_EXEC) $(TEST_DIR)/simple.cs
+	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/simple.cs
 	@echo ""
 	@echo "Test 2: Demo Program"
-	@./$(TARGET_EXEC) $(TEST_DIR)/demo.cs
+	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/demo.cs
 	@echo ""
 	@echo "Test 3: Declarations"
 	@./$(TARGET_EXEC) $(TEST_DIR)/test1_declarations.cs

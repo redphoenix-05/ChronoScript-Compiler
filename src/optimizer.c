@@ -3,7 +3,7 @@
  * Phase 5: Code Optimization
  */
 
-#include "optimizer.h"
+#include "../include/optimizer.h"
 #include <ctype.h>
 
 /* ============================================================

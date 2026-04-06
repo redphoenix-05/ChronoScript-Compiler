@@ -33,7 +33,6 @@ typedef enum {
     NODE_PRINT_STMT,
     NODE_INPUT_STMT,
     NODE_EXPR_STMT,
-    NODE_ASSIGN_STMT,       /* kept for backward compat but unused by grammar */
     NODE_BINARY_EXPR,
     NODE_UNARY_EXPR,
     NODE_CALL_EXPR,
@@ -64,5 +63,21 @@ typedef struct ASTNode {
     char     *data_type;      /* variable / function return type */
     char     *op;             /* operator string for expression nodes */
 } ASTNode;
+
+/* Global AST root (set by parser) */
+extern ASTNode *ast_root;
+
+/* AST construction */
+ASTNode *create_node(NodeType type, int line);
+ASTNode *create_binary_expr(char *op, ASTNode *left, ASTNode *right, int line);
+ASTNode *create_unary_expr(char *op, ASTNode *expr, int line);
+ASTNode *create_identifier(char *name, int line);
+ASTNode *create_int_literal(int value, int line);
+ASTNode *create_float_literal(double value, int line);
+ASTNode *create_string_literal(char *value, int line);
+
+/* AST utilities */
+void print_ast(ASTNode *node, int depth);
+void free_ast(ASTNode *node);
 
 #endif /* AST_H */

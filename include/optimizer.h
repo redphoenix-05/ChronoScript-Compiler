@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../intermediate/icg.h"
+#include "icg.h"
 
 /* Optimization statistics */
 typedef struct OptimizationStats {
