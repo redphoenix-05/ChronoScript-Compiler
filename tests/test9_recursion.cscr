@@ -1,0 +1,104 @@
+// Test 9: Recursive Functions
+// Tests: direct recursion, mutual-style recursion, recursion + loops
+
+// ---- Factorial (classical recursion) ----
+Matter factorial(Matter n) {
+    Era (n <= 1) {
+        Resolve 1;
+    }
+    Resolve n * factorial(n - 1);
+}
+
+// ---- Fibonacci (tree recursion) ----
+Matter fibonacci(Matter n) {
+    Era (n <= 0) { Resolve 0; }
+    Era (n == 1) { Resolve 1; }
+    Resolve fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// ---- Power (base^exp via recursion) ----
+Matter powerOf(Matter base, Matter exp) {
+    Era (exp == 0) { Resolve 1; }
+    Resolve base * powerOf(base, exp - 1);
+}
+
+// ---- Sum of digits (recursion) ----
+Matter sumDigits(Matter n) {
+    Era (n == 0) { Resolve 0; }
+    Resolve (n % 10) + sumDigits(n / 10);
+}
+
+// ---- Count down and count up via recursion ----
+Matter countDown(Matter n) {
+    Era (n == 0) { Resolve 0; }
+    Resolve 1 + countDown(n - 1);   // each call contributes 1
+}
+
+// ---- GCD (Euclidean, recursive) ----
+Matter gcd(Matter a, Matter b) {
+    Era (b == 0) { Resolve a; }
+    Resolve gcd(b, a % b);
+}
+
+Event main() {
+
+    // ---- factorial ----
+    Matter f0 = factorial(0);
+    Matter f1 = factorial(1);
+    Matter f5 = factorial(5);
+    Matter f7 = factorial(7);
+
+    Era (f0 == 1)   { Broadcast("factorial(0) = 1 : OK"); }
+    Era (f1 == 1)   { Broadcast("factorial(1) = 1 : OK"); }
+    Era (f5 == 120) { Broadcast("factorial(5) = 120 : OK"); }
+    Era (f7 == 5040){ Broadcast("factorial(7) = 5040 : OK"); }
+
+    // ---- fibonacci ----
+    Matter fib0 = fibonacci(0);
+    Matter fib1 = fibonacci(1);
+    Matter fib6 = fibonacci(6);
+    Matter fib10 = fibonacci(10);
+
+    Era (fib0 == 0)  { Broadcast("fibonacci(0) = 0 : OK"); }
+    Era (fib1 == 1)  { Broadcast("fibonacci(1) = 1 : OK"); }
+    Era (fib6 == 8)  { Broadcast("fibonacci(6) = 8 : OK"); }
+    Era (fib10 == 55){ Broadcast("fibonacci(10) = 55 : OK"); }
+
+    // ---- power ----
+    Matter p20 = powerOf(2, 0);
+    Matter p21 = powerOf(2, 1);
+    Matter p23 = powerOf(2, 3);
+    Matter p38 = powerOf(3, 4);
+
+    Era (p20 == 1)  { Broadcast("2^0 = 1 : OK"); }
+    Era (p21 == 2)  { Broadcast("2^1 = 2 : OK"); }
+    Era (p23 == 8)  { Broadcast("2^3 = 8 : OK"); }
+    Era (p38 == 81) { Broadcast("3^4 = 81 : OK"); }
+
+    // ---- sumDigits ----
+    Matter sd0  = sumDigits(0);
+    Matter sd9  = sumDigits(9);
+    Matter sd123 = sumDigits(123);
+    Matter sd999 = sumDigits(999);
+
+    Era (sd0 == 0)   { Broadcast("sumDigits(0) = 0 : OK"); }
+    Era (sd9 == 9)   { Broadcast("sumDigits(9) = 9 : OK"); }
+    Era (sd123 == 6) { Broadcast("sumDigits(123) = 6 : OK"); }
+    Era (sd999 == 27){ Broadcast("sumDigits(999) = 27 : OK"); }
+
+    // ---- countDown ----
+    Matter cd5 = countDown(5);
+    Era (cd5 == 5) { Broadcast("countDown(5) returns 5 : OK"); }
+
+    // ---- GCD ----
+    Matter g1 = gcd(12, 8);
+    Matter g2 = gcd(100, 75);
+    Matter g3 = gcd(7, 13);
+
+    Era (g1 == 4)  { Broadcast("gcd(12,8) = 4 : OK"); }
+    Era (g2 == 25) { Broadcast("gcd(100,75) = 25 : OK"); }
+    Era (g3 == 1)  { Broadcast("gcd(7,13) = 1 : OK"); }
+
+    Broadcast("All recursive function tests passed!");
+    Resolve 0;
+}

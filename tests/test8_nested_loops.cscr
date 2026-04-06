@@ -1,0 +1,81 @@
+// Test 8: Nested Loops
+// Tests: Loop inside Loop (nested while, nested for, mixed)
+
+Event main() {
+
+    // ---- Nested while-style loops (Loop keyword) ----
+    // Print a 3x3 multiplication table entries as a sum check
+    Matter outerW = 1;
+    Matter sumAll = 0;
+    Loop (outerW <= 3) {
+        Matter innerW = 1;
+        Loop (innerW <= 3) {
+            sumAll = sumAll + (outerW * innerW);
+            innerW = innerW + 1;
+        }
+        outerW = outerW + 1;
+    }
+    // 1*1+1*2+1*3 + 2*1+2*2+2*3 + 3*1+3*2+3*3 = 6+12+18 = 36
+    Era (sumAll == 36) {
+        Broadcast("Nested while: sum of 3x3 table = 36");
+    }
+
+    // ---- Nested for-style loops (Loop with init;cond;incr) ----
+    Matter total = 0;
+    Loop (Matter row = 1; row <= 4; row = row + 1) {
+        Loop (Matter col = 1; col <= 4; col = col + 1) {
+            total = total + 1;
+        }
+    }
+    // 4 rows * 4 cols = 16 iterations
+    Era (total == 16) {
+        Broadcast("Nested for: 4x4 = 16 iterations");
+    }
+
+    // ---- Triple nested loop ----
+    Matter depth = 0;
+    Loop (Matter a = 0; a < 2; a = a + 1) {
+        Loop (Matter b = 0; b < 2; b = b + 1) {
+            Loop (Matter c = 0; c < 2; c = c + 1) {
+                depth = depth + 1;
+            }
+        }
+    }
+    // 2 * 2 * 2 = 8
+    Era (depth == 8) {
+        Broadcast("Triple nested loop: 2x2x2 = 8 iterations");
+    }
+
+    // ---- Nested loop with break in inner ----
+    Matter breakCount = 0;
+    Loop (Matter p = 0; p < 5; p = p + 1) {
+        Loop (Matter q = 0; q < 10; q = q + 1) {
+            Era (q == 3) {
+                Escape;
+            }
+            breakCount = breakCount + 1;
+        }
+    }
+    // inner runs q=0,1,2 then breaks → 3 per outer iteration, 5 outer → 15
+    Era (breakCount == 15) {
+        Broadcast("Nested break: inner breaks at q=3, total=15");
+    }
+
+    // ---- Nested loop with continue in inner ----
+    Matter skipCount = 0;
+    Loop (Matter m = 0; m < 4; m = m + 1) {
+        Loop (Matter n = 0; n < 5; n = n + 1) {
+            Era (n == 2) {
+                Persist;   // skip n=2
+            }
+            skipCount = skipCount + 1;
+        }
+    }
+    // per outer: n=0,1,3,4 counted = 4; outer runs 4 times → 16
+    Era (skipCount == 16) {
+        Broadcast("Nested continue: skipping n=2, total=16");
+    }
+
+    Broadcast("All nested loop tests passed!");
+    Resolve 0;
+}
