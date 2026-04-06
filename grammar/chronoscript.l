@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../chronoscript.tab.h"
+#include "chronoscript.tab.h"
 
 #ifdef DEBUG
     #define DEBUG_PRINT(token) printf("Line %d: Token %s ('%s')\n", yylineno, token, yytext)

@@ -1,12 +1,12 @@
 @echo off
 REM Run a ChronoScript source file.
-REM Usage:  run.bat examples\calculator.cs  or  run.bat tests\test1_declarations.cs
+REM Usage:  run.bat examples\calculator.cscr  or  run.bat tests\test1_declarations.cscr
 REM
 REM Skips flex / bison entirely.
 REM Rebuilds the compiler from pre-generated C files only if the exe is missing.
 
 if "%~1"=="" (
-    echo Usage: run.bat ^<source.cs^>
+    echo Usage: run.bat ^<source.cscr^>
     exit /b 1
 )
 

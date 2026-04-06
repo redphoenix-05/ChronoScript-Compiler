@@ -38,15 +38,15 @@ TARGET_OBJ = target_codegen.o
 TARGET_EXEC = chrono_compiler
 
 # Test files
-TEST_FILES = $(TEST_DIR)/test1_declarations.cs \
-             $(TEST_DIR)/test2_expressions.cs \
-             $(TEST_DIR)/test3_control_flow.cs \
-             $(TEST_DIR)/test4_functions.cs \
-             $(TEST_DIR)/test5_comprehensive.cs
+TEST_FILES = $(TEST_DIR)/test1_declarations.cscr \
+             $(TEST_DIR)/test2_expressions.cscr \
+             $(TEST_DIR)/test3_control_flow.cscr \
+             $(TEST_DIR)/test4_functions.cscr \
+             $(TEST_DIR)/test5_comprehensive.cscr
 
-EXAMPLE_FILES = $(EXAMPLES_DIR)/simple.cs \
-                $(EXAMPLES_DIR)/demo.cs \
-                $(EXAMPLES_DIR)/calculator.cs
+EXAMPLE_FILES = $(EXAMPLES_DIR)/simple.cscr \
+                $(EXAMPLES_DIR)/demo.cscr \
+                $(EXAMPLES_DIR)/calculator.cscr
 
 # Output files
 OUTPUT_FILES = $(OUTPUT_DIR)/intermediate_code.txt \
@@ -60,7 +60,7 @@ all: directories $(TARGET_EXEC)
 	@echo "======================================"
 	@echo "ChronoScript Compiler Built Successfully!"
 	@echo "======================================"
-	@echo "Run: ./$(TARGET_EXEC) <input_file.cs>"
+	@echo "Run: ./$(TARGET_EXEC) <input_file.cscr>"
 
 # Create necessary directories
 .PHONY: directories
@@ -111,13 +111,13 @@ test: $(TARGET_EXEC)
 	@echo "======================================"
 	@echo ""
 	@echo "Test 1: Simple Program"
-	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/simple.cs
+	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/simple.cscr
 	@echo ""
 	@echo "Test 2: Demo Program"
-	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/demo.cs
+	@./$(TARGET_EXEC) $(EXAMPLES_DIR)/demo.cscr
 	@echo ""
 	@echo "Test 3: Declarations"
-	@./$(TARGET_EXEC) $(TEST_DIR)/test1_declarations.cs
+	@./$(TARGET_EXEC) $(TEST_DIR)/test1_declarations.cscr
 	@echo ""
 	@echo "======================================"
 	@echo "All tests completed!"
@@ -127,7 +127,7 @@ test: $(TARGET_EXEC)
 .PHONY: run
 run: $(TARGET_EXEC)
 	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make run FILE=<filename.cs>"; \
+		echo "Usage: make run FILE=<filename.cscr>"; \
 	else \
 		echo "Compiling $(FILE)..."; \
 		./$(TARGET_EXEC) $(FILE); \
@@ -179,7 +179,7 @@ help:
 	@echo "Examples:"
 	@echo "  make                           # Build compiler"
 	@echo "  make test                      # Run tests"
-	@echo "  make run FILE=tests/demo.cs    # Compile demo.cs"
+	@echo "  make run FILE=examples/demo.cscr    # Compile demo.cscr"
 	@echo "  make clean                     # Clean build files"
 
 # Phony targets

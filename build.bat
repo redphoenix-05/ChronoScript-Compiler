@@ -83,9 +83,9 @@ echo  Build completed successfully!
 echo =========================================
 echo.
 echo Usage:
-echo   chronoscript_compiler.exe tests\test1_declarations.cs
-echo   chronoscript_compiler.exe tests\simple.cs --ast
-echo   chronoscript_compiler.exe tests\demo.cs   --no-pipeline
+echo   chronoscript_compiler.exe tests\test1_declarations.cscr
+echo   chronoscript_compiler.exe examples\simple.cscr --ast
+echo   chronoscript_compiler.exe examples\demo.cscr   --no-pipeline
 echo.
 
 exit /b 0
