@@ -1,47 +1,55 @@
-// ChronoScript Calculator Program
-// Demonstrates: functions, Observe (input), Broadcast, reforge/standard/perspective
+// ChronoScript Calculator - Continuous Accumulator Mode
+// Enter +  -  *  /  to operate on the running result
+// Type  ac  or  stop  to quit
 
-Matter calculate(Matter a, Matter b, Matter op) {
-    reforge (op) {
-        standard 1: Resolve a + b;
-        standard 2: Resolve a - b;
-        standard 3: Resolve a * b;
-        standard 4: {
-            Era (b == 0) {
-                Broadcast("Error: Division by zero");
-                Resolve 0;
-            }
-            Resolve a / b;
-        }
-        standard 5: {
-            Era (b == 0) {
-                Broadcast("Error: Modulo by zero");
-                Resolve 0;
-            }
-            Resolve a % b;
-        }
-        perspective: {
-            Broadcast("Invalid operation code");
-            Resolve 0;
-        }
+Energy apply(Energy acc, Stream op, Energy num) {
+    Era (op == "+") {
+        Resolve acc + num;
     }
-    Resolve 0;
+    Alternate Era (op == "-") {
+        Resolve acc - num;
+    }
+    Alternate Era (op == "*") {
+        Resolve acc * num;
+    }
+    Alternate Era (op == "/") {
+        Era (num == 0) {
+            Broadcast("Error: Division by zero");
+            Resolve acc;
+        }
+        Resolve acc / num;
+    }
+    Broadcast("Unknown operator. Use +  -  *  /");
+    Resolve acc;
 }
 
 Event main() {
-    Matter firstNumber;
-    Matter secondNumber;
-    Matter operation;
+    Energy result;
+    Stream op;
+    Energy num;
 
-    Broadcast("ChronoScript Calculator");
-    Broadcast("Operation: 1=Add  2=Subtract  3=Multiply  4=Divide  5=Modulo");
-
-    Observe(firstNumber);
-    Observe(secondNumber);
-    Observe(operation);
-
-    Matter result = calculate(firstNumber, secondNumber, operation);
+    Broadcast("=== ChronoScript Calculator ===");
+    Broadcast("Operators: +  -  *  /");
+    Broadcast("Type  ac  or  stop  to quit");
+    Broadcast("Enter starting number:");
+    Observe(result);
     Broadcast(result);
 
+    Loop (1) {
+        Broadcast("Enter operator:");
+        Observe(op);
+
+        Era (op == "ac" || op == "stop") {
+            Escape;
+        }
+
+        Broadcast("Enter number:");
+        Observe(num);
+
+        result = apply(result, op, num);
+        Broadcast(result);
+    }
+
+    Broadcast("Calculator stopped.");
     Resolve 0;
 }

@@ -1461,8 +1461,18 @@ RuntimeValue runtime_eval_expression(ASTNode *node, RuntimeContext *ctx) {
         else if (strcmp(op,">" )==0) r=runtime_make_int(runtime_as_double(lv)>runtime_as_double(rv));
         else if (strcmp(op,"<=")==0) r=runtime_make_int(runtime_as_double(lv)<=runtime_as_double(rv));
         else if (strcmp(op,">=")==0) r=runtime_make_int(runtime_as_double(lv)>=runtime_as_double(rv));
-        else if (strcmp(op,"==")==0) r=runtime_make_int(runtime_as_double(lv)==runtime_as_double(rv));
-        else if (strcmp(op,"!=")==0) r=runtime_make_int(runtime_as_double(lv)!=runtime_as_double(rv));
+        else if (strcmp(op,"==")==0) {
+            if (lv.type==RUNTIME_STRING && rv.type==RUNTIME_STRING)
+                r=runtime_make_int(lv.strval && rv.strval && strcmp(lv.strval,rv.strval)==0);
+            else
+                r=runtime_make_int(runtime_as_double(lv)==runtime_as_double(rv));
+        }
+        else if (strcmp(op,"!=")==0) {
+            if (lv.type==RUNTIME_STRING && rv.type==RUNTIME_STRING)
+                r=runtime_make_int(!(lv.strval && rv.strval && strcmp(lv.strval,rv.strval)==0));
+            else
+                r=runtime_make_int(runtime_as_double(lv)!=runtime_as_double(rv));
+        }
         else if (strcmp(op,"&&")==0) r=runtime_make_int(runtime_is_truthy(lv)&&runtime_is_truthy(rv));
         else if (strcmp(op,"||")==0) r=runtime_make_int(runtime_is_truthy(lv)||runtime_is_truthy(rv));
         else if (strcmp(op,"&" )==0) r=runtime_make_int(runtime_as_int(lv)&runtime_as_int(rv));
